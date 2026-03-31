@@ -2,99 +2,112 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Mini Catch Game</title>
-
+<title>3D Catch Game</title>
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: linear-gradient(#1e3c72, #2a5298);
-  color: white;
-  text-align: center;
-}
-
-#topo {
-  padding: 20px;
-  font-size: 22px;
-  background: rgba(0,0,0,0.3);
-}
-
-#pokemon {
-  font-size: 100px;
-  margin-top: 50px;
-}
-
-#botoes {
+body { margin: 0; overflow: hidden; background: black; }
+#btn {
   position: fixed;
   bottom: 30px;
-  width: 100%;
-}
-
-button {
-  border: none;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  padding: 20px;
-  margin: 10px;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-#bola {
   background: red;
-  color: white;
-}
-
-#berry {
-  background: pink;
+  border: 4px solid white;
+  cursor: pointer;
 }
 </style>
 </head>
-
 <body>
 
-<div id="topo">??? / CP ???</div>
+<div id="btn"></div>
 
-<div id="pokemon">❓</div>
-
-<div id="botoes">
-  <button id="berry" onclick="usarBerry()">🍓</button>
-  <button id="bola" onclick="capturar()">⚪</button>
-</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-let pokemonAtual = null;
-let chance = 0.5;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a1a3a);
 
-function spawn() {
-  const lista = [
-    {emoji:"🔥", nome:"Flamix"},
-    {emoji:"💧", nome:"Aquari"},
-    {emoji:"🌿", nome:"Leafy"}
-  ];
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
 
-  pokemonAtual = lista[Math.floor(Math.random()*lista.length)];
-  document.getElementById("pokemon").innerText = pokemonAtual.emoji;
-  document.getElementById("topo").innerText = pokemonAtual.nome + " / CP " + (Math.floor(Math.random()*2000)+100);
-}
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-function usarBerry() {
-  chance += 0.2;
-  alert("Chance aumentada!");
-}
+// 🌙 Luz
+const light = new THREE.PointLight(0xffffff, 1);
+light.position.set(5,5,5);
+scene.add(light);
 
-function capturar() {
-  if (!pokemonAtual) return;
+// 🌿 chão
+const groundGeo = new THREE.PlaneGeometry(20,20);
+const groundMat = new THREE.MeshBasicMaterial({color:0x1f7a1f});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -2;
+scene.add(ground);
 
-  if (Math.random() < chance) {
-    alert("Capturado!");
-    spawn();
-    chance = 0.5;
-  } else {
-    alert("Fugiu!");
+// 🐉 "pokemon" (modelo simples)
+const geo = new THREE.SphereGeometry(1,32,32);
+const mat = new THREE.MeshStandardMaterial({color:0xffffff});
+const pokemon = new THREE.Mesh(geo, mat);
+scene.add(pokemon);
+
+// ✨ asas fake
+const wingGeo = new THREE.BoxGeometry(0.1,1,2);
+const wingMat = new THREE.MeshStandardMaterial({color:0xffffff});
+const wing1 = new THREE.Mesh(wingGeo, wingMat);
+const wing2 = new THREE.Mesh(wingGeo, wingMat);
+
+wing1.position.set(-1,0,0);
+wing2.position.set(1,0,0);
+
+pokemon.add(wing1);
+pokemon.add(wing2);
+
+// 🔴 pokebola
+const ballGeo = new THREE.SphereGeometry(0.3,32,32);
+const ballMat = new THREE.MeshStandardMaterial({color:0xff0000});
+const ball = new THREE.Mesh(ballGeo, ballMat);
+ball.position.set(0,-2,2);
+scene.add(ball);
+
+let throwing = false;
+
+// 🎯 clique pra jogar
+document.getElementById("btn").onclick = () => {
+  throwing = true;
+};
+
+// 🎞 animação
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Pokémon flutuando
+  pokemon.position.y = Math.sin(Date.now()*0.002) * 0.5;
+
+  // asas mexendo
+  wing1.rotation.z = Math.sin(Date.now()*0.01);
+  wing2.rotation.z = -Math.sin(Date.now()*0.01);
+
+  // bola sendo jogada
+  if (throwing) {
+    ball.position.y += 0.1;
+    ball.position.z -= 0.1;
+
+    if (ball.position.y > pokemon.position.y) {
+      throwing = false;
+      ball.position.set(0,-2,2);
+      alert("Tentativa de captura!");
+    }
   }
+
+  renderer.render(scene, camera);
 }
 
-spawn();
+animate();
 </script>
 
 </body>
