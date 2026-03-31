@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Mini Catch Game</title>
+<title>Catch Game Fix</title>
 
 <style>
 body {
@@ -28,13 +28,23 @@ body {
   cursor:pointer;
 }
 
-/* tela de encontro */
+/* tela encontro */
 #encounter {
   display:none;
   position:absolute;
   width:100%;
   height:100%;
   background: radial-gradient(circle, #00000088, #000000);
+}
+
+/* texto */
+#info {
+  position:absolute;
+  top:20px;
+  width:100%;
+  text-align:center;
+  color:white;
+  font-size:22px;
 }
 
 /* pokebola */
@@ -49,6 +59,11 @@ body {
   background: linear-gradient(red 50%, white 50%);
   border:4px solid black;
   cursor:pointer;
+  transition: transform 0.2s;
+}
+
+#ball:active {
+  transform: translateX(-50%) scale(0.9);
 }
 
 #ball::after {
@@ -62,16 +77,6 @@ body {
   border:3px solid black;
   border-radius:50%;
   transform:translate(-50%,-50%);
-}
-
-/* texto */
-#info {
-  position:absolute;
-  top:20px;
-  width:100%;
-  text-align:center;
-  color:white;
-  font-size:20px;
 }
 </style>
 </head>
@@ -91,15 +96,19 @@ const grass = document.getElementById("grass");
 const encounter = document.getElementById("encounter");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const info = document.getElementById("info");
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
 
-let pokemonAtual;
+let pokemonAtual = null;
 let shiny = false;
-let y = 0;
 
-// 🎲 lista de pokemons fake
+// 🎲 criaturas
 const pokemons = [
   {nome:"Flamix", cor:"orange"},
   {nome:"Aquari", cor:"cyan"},
@@ -111,36 +120,35 @@ grass.onclick = () => {
   encounter.style.display = "block";
 
   pokemonAtual = pokemons[Math.floor(Math.random()*pokemons.length)];
-
-  // ✨ chance shiny (1/10)
   shiny = Math.random() < 0.1;
 
-  document.getElementById("info").innerText =
-    pokemonAtual.nome + (shiny ? " ✨ SHINY!" : "");
+  info.innerText = pokemonAtual.nome + (shiny ? " ✨ SHINY!" : "");
 };
 
-// 🎬 animação (fake 3D)
-function drawPokemon() {
+// 🎬 animação
+function draw() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  let size = 80 + Math.sin(Date.now()*0.003)*10;
+  if (!pokemonAtual) return;
+
+  let t = Date.now()*0.002;
+  let y = Math.sin(t) * 20;
+  let size = 80 + Math.sin(t*2)*10;
 
   ctx.save();
   ctx.translate(canvas.width/2, canvas.height/2 + y);
 
-  // brilho shiny
   if (shiny) {
     ctx.shadowBlur = 30;
     ctx.shadowColor = "yellow";
   }
 
-  // corpo
-  ctx.fillStyle = pokemonAtual ? pokemonAtual.cor : "white";
+  ctx.fillStyle = pokemonAtual.cor;
   ctx.beginPath();
   ctx.arc(0,0,size,0,Math.PI*2);
   ctx.fill();
 
-  // olho
+  // olhos
   ctx.fillStyle = "black";
   ctx.beginPath();
   ctx.arc(-20,-10,8,0,Math.PI*2);
@@ -148,8 +156,6 @@ function drawPokemon() {
   ctx.fill();
 
   ctx.restore();
-
-  y = Math.sin(Date.now()*0.002)*20;
 }
 
 // 🔴 captura
@@ -164,13 +170,14 @@ document.getElementById("ball").onclick = () => {
     alert("Fugiu!");
   }
 
-  encounter.style.display = "none";
+  // reset
   pokemonAtual = null;
+  encounter.style.display = "none";
 };
 
-// loop
+// loop seguro
 function loop() {
-  if (pokemonAtual) drawPokemon();
+  draw();
   requestAnimationFrame(loop);
 }
 loop();
