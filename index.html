@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Poke-Arceus Clone</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <b>Poke-Arceus 3D JS</b><br>
+        WASD para mover | Clique para lançar Pokébola
+    </div>
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+
+        // --- CONFIGURAÇÃO BÁSICA ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // Céu azul
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- LUZES ---
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // --- CHÃO (O MUNDO) ---
+        const planeGeo = new THREE.PlaneGeometry(100, 100);
+        const planeMat = new THREE.MeshStandardMaterial({ color: 0x228b22 }); // Verde grama
+        const ground = new THREE.Mesh(planeGeo, planeMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // --- JOGADOR (TREINADOR) ---
+        const playerGeo = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.y = 1;
+        scene.add(player);
+
+        // --- POKÉMON SELVAGEM (STARYU?) ---
+        const pokeGeo = new THREE.SphereGeometry(0.7, 32, 32);
+        const pokeMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        const pokemon = new THREE.Mesh(pokeGeo, pokeMat);
+        pokemon.position.set(5, 0.7, -10);
+        scene.add(pokemon);
+
+        // --- CONTROLES E VARIÁVEIS ---
+        const keys = {};
+        const balls = [];
+        window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        // LANÇAR POKÉBOLA
+        window.addEventListener('mousedown', () => {
+            const ballGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const ball = new THREE.Mesh(ballGeo, ballMat);
+            
+            ball.position.copy(player.position);
+            
+            // Direção simples para frente
+            const direction = new THREE.Vector3(0, 0.5, -1).normalize();
+            ball.userData = { velocity: direction.multiplyScalar(0.5) };
+            
+            scene.add(ball);
+            balls.push(ball);
+        });
+
+        camera.position.set(0, 5, 10);
+        camera.lookAt(player.position);
+
+        // --- LOOP DE ANIMAÇÃO ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movimento do Jogador
+            if (keys['w']) player.position.z -= 0.1;
+            if (keys['s']) player.position.z += 0.1;
+            if (keys['a']) player.position.x -= 0.1;
+            if (keys['d']) player.position.x += 0.1;
+
+            // Câmera segue o jogador
+            camera.position.lerp(new THREE.Vector3(player.position.x, player.position.y + 5, player.position.z + 10), 0.1);
+            camera.lookAt(player.position);
+
+            // Movimento das Pokébolas e Colisão básica
+            balls.forEach((ball, index) => {
+                ball.position.add(ball.userData.velocity);
+                ball.userData.velocity.y -= 0.01; // Gravidade
+
+                // Simular colisão simples por distância
+                if (ball.position.distanceTo(pokemon.position) < 1) {
+                    pokemon.material.color.set(0xffff00); // Acertou!
+                    scene.remove(ball);
+                    balls.splice(index, 1);
+                    setTimeout(() => alert("Você capturou o Pokémon!"), 10);
+                }
+
+                if (ball.position.y < 0) {
+                    scene.remove(ball);
+                    balls.splice(index, 1);
+                }
+            });
+
+            // Movimento bobo do Pokémon
+            pokemon.position.x += Math.sin(Date.now() * 0.001) * 0.05;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Ajuste de tela
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
