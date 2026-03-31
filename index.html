@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Catch Game Fix</title>
+<title>Catch Game OK</title>
 
 <style>
 body {
@@ -34,7 +34,12 @@ body {
   position:absolute;
   width:100%;
   height:100%;
-  background: radial-gradient(circle, #00000088, #000000);
+  background: linear-gradient(#0a1a3a, #000);
+}
+
+/* canvas visível */
+#canvas {
+  display:block;
 }
 
 /* texto */
@@ -59,24 +64,6 @@ body {
   background: linear-gradient(red 50%, white 50%);
   border:4px solid black;
   cursor:pointer;
-  transition: transform 0.2s;
-}
-
-#ball:active {
-  transform: translateX(-50%) scale(0.9);
-}
-
-#ball::after {
-  content:"";
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:15px;
-  height:15px;
-  background:white;
-  border:3px solid black;
-  border-radius:50%;
-  transform:translate(-50%,-50%);
 }
 </style>
 </head>
@@ -108,14 +95,12 @@ window.addEventListener("resize", resize);
 let pokemonAtual = null;
 let shiny = false;
 
-// 🎲 criaturas
 const pokemons = [
   {nome:"Flamix", cor:"orange"},
   {nome:"Aquari", cor:"cyan"},
   {nome:"Leafy", cor:"lime"}
 ];
 
-// 🌿 clicar na grama
 grass.onclick = () => {
   encounter.style.display = "block";
 
@@ -125,9 +110,10 @@ grass.onclick = () => {
   info.innerText = pokemonAtual.nome + (shiny ? " ✨ SHINY!" : "");
 };
 
-// 🎬 animação
 function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // fundo VISÍVEL (resolve tela preta)
+  ctx.fillStyle = "#0a1a3a";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
   if (!pokemonAtual) return;
 
@@ -158,7 +144,6 @@ function draw() {
   ctx.restore();
 }
 
-// 🔴 captura
 document.getElementById("ball").onclick = () => {
   if (!pokemonAtual) return;
 
@@ -170,12 +155,10 @@ document.getElementById("ball").onclick = () => {
     alert("Fugiu!");
   }
 
-  // reset
   pokemonAtual = null;
   encounter.style.display = "none";
 };
 
-// loop seguro
 function loop() {
   draw();
   requestAnimationFrame(loop);
