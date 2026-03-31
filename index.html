@@ -2,152 +2,178 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Catch Game 2D</title>
+<title>Mini Catch Game</title>
 
 <style>
 body {
-  margin: 0;
-  overflow: hidden;
+  margin:0;
+  overflow:hidden;
   font-family: Arial;
-  background: url("https://i.imgur.com/6Iej2c3.jpg") no-repeat center;
-  background-size: cover;
-  color: white;
+  background: linear-gradient(#87CEEB, #4caf50);
 }
 
-/* topo */
-#topo {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  padding: 15px;
-  text-align: center;
-  font-size: 20px;
-  background: rgba(0,0,0,0.4);
+/* 🌿 grama */
+#grass {
+  position:absolute;
+  bottom:0;
+  width:100%;
+  height:150px;
+  background: repeating-linear-gradient(
+    45deg,
+    #2e7d32,
+    #2e7d32 10px,
+    #388e3c 10px,
+    #388e3c 20px
+  );
+  cursor:pointer;
 }
 
-/* pokemon */
-#pokemon {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 100px;
-  animation: flutuar 2s infinite ease-in-out;
-}
-
-@keyframes flutuar {
-  0% { transform: translate(-50%, -50%) translateY(0); }
-  50% { transform: translate(-50%, -50%) translateY(-20px); }
-  100% { transform: translate(-50%, -50%) translateY(0); }
-}
-
-/* circulo de captura */
-#circulo {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  width: 150px;
-  height: 150px;
-  border: 3px solid lime;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(1); opacity:1; }
-  50% { transform: translate(-50%, -50%) scale(0.7); opacity:0.5; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity:1; }
+/* tela de encontro */
+#encounter {
+  display:none;
+  position:absolute;
+  width:100%;
+  height:100%;
+  background: radial-gradient(circle, #00000088, #000000);
 }
 
 /* pokebola */
-#pokeball {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
+#ball {
+  position:absolute;
+  bottom:40px;
+  left:50%;
+  transform:translateX(-50%);
+  width:70px;
+  height:70px;
+  border-radius:50%;
   background: linear-gradient(red 50%, white 50%);
-  border-radius: 50%;
-  border: 4px solid black;
-  cursor: grab;
+  border:4px solid black;
+  cursor:pointer;
 }
 
-/* botão meio da pokebola */
-#pokeball::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border: 3px solid black;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+#ball::after {
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:15px;
+  height:15px;
+  background:white;
+  border:3px solid black;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* texto */
+#info {
+  position:absolute;
+  top:20px;
+  width:100%;
+  text-align:center;
+  color:white;
+  font-size:20px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="topo">Flamix / CP 1234</div>
+<div id="grass"></div>
 
-<div id="pokemon">🔥</div>
-<div id="circulo"></div>
-
-<div id="pokeball"></div>
+<div id="encounter">
+  <canvas id="canvas"></canvas>
+  <div id="info"></div>
+  <div id="ball"></div>
+</div>
 
 <script>
-const ball = document.getElementById("pokeball");
-const pokemon = document.getElementById("pokemon");
+const grass = document.getElementById("grass");
+const encounter = document.getElementById("encounter");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-let dragging = false;
-let startX, startY;
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-ball.addEventListener("mousedown", (e) => {
-  dragging = true;
-  startX = e.clientX;
-  startY = e.clientY;
-  ball.style.cursor = "grabbing";
-});
+let pokemonAtual;
+let shiny = false;
+let y = 0;
 
-document.addEventListener("mouseup", (e) => {
-  if (!dragging) return;
-  dragging = false;
+// 🎲 lista de pokemons fake
+const pokemons = [
+  {nome:"Flamix", cor:"orange"},
+  {nome:"Aquari", cor:"cyan"},
+  {nome:"Leafy", cor:"lime"}
+];
 
-  let dx = e.clientX - startX;
-  let dy = e.clientY - startY;
+// 🌿 clicar na grama
+grass.onclick = () => {
+  encounter.style.display = "block";
 
-  lançar(dx, dy);
-  ball.style.cursor = "grab";
-});
+  pokemonAtual = pokemons[Math.floor(Math.random()*pokemons.length)];
 
-function lançar(dx, dy) {
-  let x = 0;
-  let y = 0;
+  // ✨ chance shiny (1/10)
+  shiny = Math.random() < 0.1;
 
-  let interval = setInterval(() => {
-    x += dx * 0.02;
-    y += dy * 0.02;
+  document.getElementById("info").innerText =
+    pokemonAtual.nome + (shiny ? " ✨ SHINY!" : "");
+};
 
-    ball.style.transform = `translate(${x}px, ${y}px)`;
+// 🎬 animação (fake 3D)
+function drawPokemon() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // colisão simples
-    if (y < -300) {
-      clearInterval(interval);
+  let size = 80 + Math.sin(Date.now()*0.003)*10;
 
-      if (Math.random() > 0.5) {
-        alert("Capturado!");
-      } else {
-        alert("Fugiu!");
-      }
+  ctx.save();
+  ctx.translate(canvas.width/2, canvas.height/2 + y);
 
-      ball.style.transform = "translateX(-50%)";
-    }
-  }, 16);
+  // brilho shiny
+  if (shiny) {
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = "yellow";
+  }
+
+  // corpo
+  ctx.fillStyle = pokemonAtual ? pokemonAtual.cor : "white";
+  ctx.beginPath();
+  ctx.arc(0,0,size,0,Math.PI*2);
+  ctx.fill();
+
+  // olho
+  ctx.fillStyle = "black";
+  ctx.beginPath();
+  ctx.arc(-20,-10,8,0,Math.PI*2);
+  ctx.arc(20,-10,8,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+
+  y = Math.sin(Date.now()*0.002)*20;
 }
+
+// 🔴 captura
+document.getElementById("ball").onclick = () => {
+  if (!pokemonAtual) return;
+
+  let chance = shiny ? 0.8 : 0.5;
+
+  if (Math.random() < chance) {
+    alert("Capturado!");
+  } else {
+    alert("Fugiu!");
+  }
+
+  encounter.style.display = "none";
+  pokemonAtual = null;
+};
+
+// loop
+function loop() {
+  if (pokemonAtual) drawPokemon();
+  requestAnimationFrame(loop);
+}
+loop();
 </script>
 
 </body>
