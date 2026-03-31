@@ -1,152 +1,101 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poke-DS GitHub Edition</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: 'Courier New', Courier, monospace; }
-        #canvas-container { width: 100vw; height: 100vh; }
-        
-        /* Interface Estilo Nintendo DS */
-        #gui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; z-index: 10; pointer-events: none; }
-        .stats { background: rgba(0,0,0,0.7); display: inline-block; padding: 10px; border: 2px solid #555; }
-        
-        /* Controles Virtuais */
-        .dpad { position: absolute; bottom: 20px; left: 20px; display: grid; grid-template-columns: 40px 40px 40px; z-index: 20; }
-        .dbtn { width: 40px; height: 40px; background: #333; border: 1px solid #777; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .action-btns { position: absolute; bottom: 20px; right: 20px; z-index: 20; }
-        .abtn { width: 60px; height: 60px; background: #a00; border-radius: 50%; border: 3px solid white; color: white; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<title>Mini Catch Game</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: linear-gradient(#1e3c72, #2a5298);
+  color: white;
+  text-align: center;
+}
+
+#topo {
+  padding: 20px;
+  font-size: 22px;
+  background: rgba(0,0,0,0.3);
+}
+
+#pokemon {
+  font-size: 100px;
+  margin-top: 50px;
+}
+
+#botoes {
+  position: fixed;
+  bottom: 30px;
+  width: 100%;
+}
+
+button {
+  border: none;
+  border-radius: 50%;
+  padding: 20px;
+  margin: 10px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#bola {
+  background: red;
+  color: white;
+}
+
+#berry {
+  background: pink;
+}
+</style>
 </head>
+
 <body>
 
-    <div id="gui">
-        <div class="stats">
-            <b>POKÉDEX: <span id="count">0</span>/151</b><br>
-            <small>Explore o mapa para encontrar os clássicos</small>
-        </div>
-    </div>
+<div id="topo">??? / CP ???</div>
 
-    <!-- Controles -->
-    <div class="dpad">
-        <div></div><div class="dbtn" id="up">▲</div><div></div>
-        <div class="dbtn" id="left">◀</div><div class="dbtn"></div><div class="dbtn" id="right">▶</div>
-        <div></div><div class="dbtn" id="down">▼</div><div></div>
-    </div>
-    <div class="action-btns">
-        <button class="abtn" id="throw">LANÇAR</button>
-    </div>
+<div id="pokemon">❓</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="botoes">
+  <button id="berry" onclick="usarBerry()">🍓</button>
+  <button id="bola" onclick="capturar()">⚪</button>
+</div>
 
-    <script>
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x78b8e0);
-        scene.fog = new THREE.Fog(0x78b8e0, 10, 80);
+<script>
+let pokemonAtual = null;
+let chance = 0.5;
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: false }); // Antialias off para look de DS
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+function spawn() {
+  const lista = [
+    {emoji:"🔥", nome:"Flamix"},
+    {emoji:"💧", nome:"Aquari"},
+    {emoji:"🌿", nome:"Leafy"}
+  ];
 
-        // LUZ
-        const ambient = new THREE.AmbientLight(0xffffff, 1);
-        scene.add(ambient);
+  pokemonAtual = lista[Math.floor(Math.random()*lista.length)];
+  document.getElementById("pokemon").innerText = pokemonAtual.emoji;
+  document.getElementById("topo").innerText = pokemonAtual.nome + " / CP " + (Math.floor(Math.random()*2000)+100);
+}
 
-        // CHÃO ESTILO DS (QUADRICULADO)
-        const groundSize = 200;
-        const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x5da048 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        scene.add(ground);
+function usarBerry() {
+  chance += 0.2;
+  alert("Chance aumentada!");
+}
 
-        // GRID DO CHÃO
-        const grid = new THREE.GridHelper(groundSize, 100, 0x4a853a, 0x4a853a);
-        scene.add(grid);
+function capturar() {
+  if (!pokemonAtual) return;
 
-        // JOGADOR
-        const player = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.5), new THREE.MeshStandardMaterial({color: 0xff0000}));
-        body.position.y = 0.75;
-        player.add(body);
-        scene.add(player);
+  if (Math.random() < chance) {
+    alert("Capturado!");
+    spawn();
+    chance = 0.5;
+  } else {
+    alert("Fugiu!");
+  }
+}
 
-        // SISTEMA DE POKÉMONS REAIS (SPRITES)
-        const pokemons = [];
-        const loader = new THREE.TextureLoader();
+spawn();
+</script>
 
-        async function spawn150Pokemons() {
-            for (let i = 1; i <= 151; i++) {
-                // Link oficial dos sprites da Nintendo/GameFreak via PokeAPI
-                const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png`;
-                
-                const texture = loader.load(spriteUrl);
-                texture.magFilter = THREE.NearestFilter; // Deixa os pixels nítidos igual ao DS
-                
-                const mat = new THREE.SpriteMaterial({ map: texture });
-                const sprite = new THREE.Sprite(mat);
-                
-                sprite.scale.set(2, 2, 1);
-                sprite.position.set(
-                    (Math.random() - 0.5) * 80,
-                    1,
-                    (Math.random() - 0.5) * 80
-                );
-                
-                sprite.userData = { id: i };
-                scene.add(sprite);
-                pokemons.push(sprite);
-            }
-        }
-        spawn150Pokemons();
-
-        // CONTROLES
-        const keys = {};
-        const move = { x: 0, z: 0 };
-        
-        window.addEventListener('keydown', e => keys[e.code] = true);
-        window.addEventListener('keyup', e => keys[e.code] = false);
-
-        // LÓGICA DE MOVIMENTO
-        function updateMovement() {
-            if (keys['ArrowUp'] || keys['KeyW']) player.position.z -= 0.15;
-            if (keys['ArrowDown'] || keys['KeyS']) player.position.z += 0.15;
-            if (keys['ArrowLeft'] || keys['KeyA']) player.position.x -= 0.15;
-            if (keys['ArrowRight'] || keys['KeyD']) player.position.x += 0.15;
-
-            // Câmera estilo DS (Inclinada e segue o player)
-            camera.position.set(player.position.x, player.position.y + 12, player.position.z + 12);
-            camera.lookAt(player.position.x, 0, player.position.z);
-        }
-
-        // CAPTURA
-        let captured = 0;
-        document.getElementById('throw').onclick = () => {
-            pokemons.forEach((p, idx) => {
-                if (player.position.distanceTo(p.position) < 3) {
-                    scene.remove(p);
-                    pokemons.splice(idx, 1);
-                    captured++;
-                    document.getElementById('count').innerText = captured;
-                    alert("Você capturou um Pokémon!");
-                }
-            });
-        };
-
-        function animate() {
-            requestAnimationFrame(animate);
-            updateMovement();
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
 </body>
 </html>
